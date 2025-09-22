@@ -19,33 +19,35 @@ app.post("/create-order", async (req, res) => {
 
   try {
     const order = await razorpay.orders.create({
-      amount: amount * 100, // Amount in paise
+      amount: Math.round(amount * 100), // convert to paise, round for safety
       currency,
       receipt,
-      payment_capture: 1, // Auto capture payment
-      method: 'upi', // Specify UPI method
+      payment_capture: 1, // auto-capture after payment
       notes: {
         ...notes,
         created_at: new Date().toISOString(),
-        platform: 'react-native-expo'
+        platform: "react-native-expo"
       }
     });
 
     res.json({
+      success: true,
       orderId: order.id,
       currency: order.currency,
-      amount: order.amount,
+      amount: order.amount / 100, // send back in rupees for frontend clarity
       key: process.env.RAZORPAY_KEY_ID,
       createdAt: order.created_at
     });
   } catch (error) {
     console.error("Order creation failed:", error);
-    res.status(500).json({ 
-      message: "Order creation failed", 
-      error: error.error ? error.error.description : error.message 
+    res.status(500).json({
+      success: false,
+      message: "Order creation failed",
+      error: error.error ? error.error.description : error.message
     });
   }
 });
+
 
 // Enhanced payment verification with UPI support
 app.post("/verify-payment", async (req, res) => {
@@ -138,51 +140,25 @@ app.get("/payment-status/:paymentId", async (req, res) => {
 });
 
 // Webhook endpoint for UPI payment notifications (recommended)
-app.post("/webhook", express.raw({type: 'application/json'}), (req, res) => {
+app.post("/webhook", express.raw({ type: 'application/json' }), (req, res) => {
   const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
-  
-  if (!webhookSecret) {
-    console.warn('Webhook secret not configured');
-    return res.status(500).json({ message: 'Webhook not configured' });
-  }
-
   const signature = req.headers['x-razorpay-signature'];
-  const body = req.body.toString();
-  
+  const body = req.body; // raw buffer
+
   const expectedSignature = crypto
     .createHmac('sha256', webhookSecret)
     .update(body)
     .digest('hex');
-  
+
   if (signature === expectedSignature) {
-    const event = JSON.parse(body);
-    console.log('Webhook received:', event.event, event.payload.payment.entity.id);
-    
-    // Handle different payment events
-    switch (event.event) {
-      case 'payment.authorized':
-        console.log('Payment authorized:', event.payload.payment.entity.id);
-        // Handle authorized payment (common for UPI)
-        break;
-      case 'payment.captured':
-        console.log('Payment captured:', event.payload.payment.entity.id);
-        // Handle captured payment
-        break;
-      case 'payment.failed':
-        console.log('Payment failed:', event.payload.payment.entity.id);
-        // Handle failed payment
-        break;
-      case 'payment.dispute.created':
-        console.log('Payment dispute:', event.payload.payment.entity.id);
-        break;
-    }
-    
-    res.json({ status: 'success' });
+    const event = JSON.parse(body.toString()); // safe parse
+    console.log("Webhook received:", event.event, event.payload.payment.entity.id);
+    ...
   } else {
-    console.warn('Invalid webhook signature');
-    res.status(400).json({ status: 'invalid signature' });
+    return res.status(400).json({ status: "invalid signature" });
   }
 });
+
 
 // Health check endpoint
 app.get("/health", (req, res) => {
@@ -208,7 +184,7 @@ app.use((req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+app.listen(PORT,'0.0.0.0', () => {
   console.log(`Server running at http://localhost:${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 });
