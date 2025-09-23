@@ -153,7 +153,7 @@ app.post("/webhook", express.raw({ type: 'application/json' }), (req, res) => {
   if (signature === expectedSignature) {
     const event = JSON.parse(body.toString()); // safe parse
     console.log("Webhook received:", event.event, event.payload.payment.entity.id);
-    ...
+    res.json({ status: "success" });
   } else {
     return res.status(400).json({ status: "invalid signature" });
   }
