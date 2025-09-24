@@ -9,8 +9,8 @@ app.use(cors());
 app.use(express.json());
 
 const razorpay = new Razorpay({
-  key_id: 'rzp_live_RKfEnx3YhLfVPj',
-  key_secret: 'VyGHCPRw9wW1hFTyIMpAdKLZ',
+  key_id: 'rzp_live_RKCoTHZNLRXSb9',
+  key_secret: 'l1Ftg87E3Y10SWW4uO4Mcmo4',
 });
 
 
