@@ -9,12 +9,11 @@ app.use(cors());
 app.use(express.json());
 
 const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
+  key_id: 'rzp_live_RKfEnx3YhLfVPj',
+  key_secret: 'VyGHCPRw9wW1hFTyIMpAdKLZ',
 });
 
-const key_id = 'rzp_live_RKfEnx3YhLfVPj';
-const key_secret: 'VyGHCPRw9wW1hFTyIMpAdKLZ';
+
 
 // Create Razorpay order with UPI support
 app.post("/create-order", async (req, res) => {
@@ -38,7 +37,7 @@ app.post("/create-order", async (req, res) => {
       orderId: order.id,
       currency: order.currency,
       amount: order.amount / 100, // send back in rupees for frontend clarity
-      key: key_id,
+      key: razorpay.key_id,
       createdAt: order.created_at
     });
   } catch (error) {
@@ -67,7 +66,7 @@ app.post("/verify-payment", async (req, res) => {
 
     // Generate signature for verification
     const generated_signature = crypto
-      .createHmac("sha256", key_secret)
+      .createHmac("sha256", razorpay.key_secret)
       .update(`${razorpay_order_id}|${razorpay_payment_id}`)
       .digest("hex");
 
