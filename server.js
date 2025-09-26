@@ -211,46 +211,35 @@ const ownerAccounts = new Map();
 
 // Function to create Razorpay contact and fund account for owner
 // Function to create Razorpay contact and fund account for owner
-async function createOwnerFundAccount(ownerData) {
+// Function to create Razorpay Linked Account for owner
+async function createOwnerAccount(ownerData) {
   try {
-    // Step 1: Create contact in Razorpay
-    const contact = await razorpay.request('POST', '/contacts', {
-      name: ownerData.bankAccountHolderName,
-      contact: ownerData.phoneNumber,
+    const account = await razorpay.accounts.create({
       email: ownerData.email || `${ownerData.phoneNumber}@mybarber.com`,
-      type: 'vendor',
-      reference_id: `owner_${ownerData.phoneNumber}`
-    });
-
-    // Step 2: Create fund account (bank account)
-    const fundAccount = await razorpay.request('POST', '/fund_accounts', {
-      contact_id: contact.id,
-      account_type: 'bank_account',
-      bank_account: {
-        name: ownerData.bankAccountHolderName,
-        ifsc: ownerData.bankIfscCode,
-        account_number: ownerData.bankAccountNumber
-      }
+      phone: ownerData.phoneNumber,
+      type: "route", // Route account for split payments
+      legal_business_name: ownerData.bankAccountHolderName,
+      business_type: "individual",
+      contact_name: ownerData.bankAccountHolderName
     });
 
     return {
-      contactId: contact.id,
-      fundAccountId: fundAccount.id,
-      status: 'active'
+      accountId: account.id,
+      status: account.status
     };
   } catch (error) {
-    console.error('Error creating fund account:', error);
+    console.error("Error creating linked account:", error);
     throw error;
   }
 }
 
-// API to register owner with Razorpay
-// API to register owner with Razorpay
+
+// API to register owner with Razorpay (Linked Account)
 app.post("/register-owner", async (req, res) => {
   const { ownerId, ownerData } = req.body;
 
   try {
-    const razorpayAccount = await createOwnerFundAccount(ownerData);
+    const razorpayAccount = await createOwnerAccount(ownerData);
 
     // Store mapping (in production, save to a database)
     ownerAccounts.set(ownerId, razorpayAccount);
@@ -258,13 +247,13 @@ app.post("/register-owner", async (req, res) => {
     res.json({
       success: true,
       razorpayAccount,
-      message: 'Owner registered successfully with Razorpay'
+      message: "Owner registered successfully as a Razorpay Linked Account"
     });
   } catch (error) {
-    console.error('Owner registration failed:', error);
+    console.error("Owner registration failed:", error);
     res.status(500).json({
       success: false,
-      message: 'Failed to register owner with Razorpay',
+      message: "Failed to register owner with Razorpay",
       error: error.error?.description || error.message
     });
   }
