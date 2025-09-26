@@ -209,18 +209,30 @@ const razorpay = new Razorpay({
 // Store owner-account mappings (in production, use a database)
 const ownerAccounts = new Map();
 
-// Function to create Razorpay contact and fund account for owner
-// Function to create Razorpay contact and fund account for owner
-// Function to create Razorpay Linked Account for owner
+// Function to create Razorpay Linked Account for owner (Route)
 async function createOwnerAccount(ownerData) {
   try {
     const account = await razorpay.accounts.create({
       email: ownerData.email || `${ownerData.phoneNumber}@mybarber.com`,
       phone: ownerData.phoneNumber,
-      type: "route", // Route account for split payments
+      type: "route", // Linked account type
       legal_business_name: ownerData.bankAccountHolderName,
       business_type: "individual",
-      contact_name: ownerData.bankAccountHolderName
+      profile: {
+        name: ownerData.bankAccountHolderName,
+        contact: ownerData.bankAccountHolderName,
+        business_type: "individual",
+        category: "beauty_and_wellness", // Example category
+        subcategory: "salon",            // Example subcategory
+        description: "Salon service provider on MyBarber platform",
+        address: {
+          street1: "123 Main Street",
+          city: "Bengaluru",
+          state: "Karnataka",
+          postal_code: "560001",
+          country: "IN"
+        }
+      }
     });
 
     return {
@@ -233,8 +245,6 @@ async function createOwnerAccount(ownerData) {
   }
 }
 
-
-// API to register owner with Razorpay (Linked Account)
 app.post("/register-owner", async (req, res) => {
   const { ownerId, ownerData } = req.body;
 
@@ -258,6 +268,7 @@ app.post("/register-owner", async (req, res) => {
     });
   }
 });
+
 
 // Enhanced payment creation with route support
 app.post("/create-order", async (req, res) => {
