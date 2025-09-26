@@ -210,10 +210,11 @@ const razorpay = new Razorpay({
 const ownerAccounts = new Map();
 
 // Function to create Razorpay contact and fund account for owner
+// Function to create Razorpay contact and fund account for owner
 async function createOwnerFundAccount(ownerData) {
   try {
     // Step 1: Create contact in Razorpay
-    const contact = await razorpay.contacts.create({
+    const contact = await razorpay.request('POST', '/contacts', {
       name: ownerData.bankAccountHolderName,
       contact: ownerData.phoneNumber,
       email: ownerData.email || `${ownerData.phoneNumber}@mybarber.com`,
@@ -222,7 +223,7 @@ async function createOwnerFundAccount(ownerData) {
     });
 
     // Step 2: Create fund account (bank account)
-    const fundAccount = await razorpay.fundAccounts.create({
+    const fundAccount = await razorpay.request('POST', '/fund_accounts', {
       contact_id: contact.id,
       account_type: 'bank_account',
       bank_account: {
@@ -244,15 +245,16 @@ async function createOwnerFundAccount(ownerData) {
 }
 
 // API to register owner with Razorpay
+// API to register owner with Razorpay
 app.post("/register-owner", async (req, res) => {
   const { ownerId, ownerData } = req.body;
 
   try {
     const razorpayAccount = await createOwnerFundAccount(ownerData);
-    
-    // Store mapping (in production, save to database)
+
+    // Store mapping (in production, save to a database)
     ownerAccounts.set(ownerId, razorpayAccount);
-    
+
     res.json({
       success: true,
       razorpayAccount,
